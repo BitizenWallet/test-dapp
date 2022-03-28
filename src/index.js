@@ -1,4 +1,3 @@
-import MetaMaskOnboarding from '@metamask/onboarding';
 // eslint-disable-next-line camelcase
 import {
   encrypt,
@@ -30,7 +29,7 @@ const currentUrl = new URL(window.location.href);
 const forwarderOrigin =
   currentUrl.hostname === 'localhost' ? 'http://localhost:9010' : undefined;
 
-const { isMetaMaskInstalled } = MetaMaskOnboarding;
+const isMetaMaskInstalled = () => window.ethereum != null;
 
 // Dapp Status Section
 const networkDiv = document.getElementById('network');
@@ -171,11 +170,6 @@ const initialize = async () => {
   }
 
   let onboarding;
-  try {
-    onboarding = new MetaMaskOnboarding({ forwarderOrigin });
-  } catch (error) {
-    console.error(error);
-  }
 
   let accounts;
   let accountButtonsInitialized = false;
@@ -212,12 +206,6 @@ const initialize = async () => {
   ];
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
-
-  const onClickInstall = () => {
-    onboardButton.innerText = 'Onboarding in progress';
-    onboardButton.disabled = true;
-    onboarding.startOnboarding();
-  };
 
   const onClickConnect = async () => {
     try {
@@ -261,21 +249,12 @@ const initialize = async () => {
       signTypedDataV4.disabled = false;
     }
 
-    if (isMetaMaskInstalled()) {
       addEthereumChain.disabled = false;
       switchEthereumChain.disabled = false;
-    } else {
-      onboardButton.innerText = 'Click here to install MetaMask!';
-      onboardButton.onclick = onClickInstall;
-      onboardButton.disabled = false;
-    }
 
     if (isMetaMaskConnected()) {
       onboardButton.innerText = 'Connected';
       onboardButton.disabled = true;
-      if (onboarding) {
-        onboarding.stopOnboarding();
-      }
     } else {
       onboardButton.innerText = 'Connect';
       onboardButton.onclick = onClickConnect;
