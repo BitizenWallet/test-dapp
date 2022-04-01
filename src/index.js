@@ -42,6 +42,11 @@ const onboardButton = document.getElementById('connectButton');
 const getAccountsButton = document.getElementById('getAccounts');
 const getAccountsResults = document.getElementById('getAccountsResult');
 
+// Multi Chain Actions Section
+const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
+const selectChainsOptions = document.getElementById('selectChains')
+const selectAccountsOptions = document.getElementById('selectAccounts')
+
 // Permissions Actions Section
 const requestPermissionsButton = document.getElementById('requestPermissions');
 const getPermissionsButton = document.getElementById('getPermissions');
@@ -169,10 +174,22 @@ const initialize = async () => {
     console.error(error);
   }
 
-  let onboarding;
-
   let accounts;
+  let multiChainAccounts;
   let accountButtonsInitialized = false;
+
+  selectChainsOptions.addEventListener('change', (event) => {
+    window.ethereum.chainId = event.target.value;
+    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
+  });
+
+  selectAccountsOptions.addEventListener('change', (event) => {
+    const a = accounts[0];
+    accounts[accounts.findIndex((account) => account == event.target.value)] = a;
+    accounts[0] = event.target.value;
+    multiChainAccounts[parseInt(window.ethereum.chainId, 16)] = accounts;
+    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
+  });
 
   const accountButtons = [
     deployButton,
@@ -206,6 +223,22 @@ const initialize = async () => {
   ];
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
+
+  const onClickConnectMultiChain = async () => {
+    try {
+      const newAccounts = await ethereum.request({
+        method: 'eth_requestAccountsMultiChain',
+      });
+      // const newAccounts = {
+      //   1: ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000001'],
+      //   42: ['0x0000000000000000000000000000000000000002', '0x0000000000000000000000000000000000000003'],
+      //   128: ['0x0000000000000000000000000000000000000004', '0x0000000000000000000000000000000000000005'],
+      // }
+      handleNewAccountsMultiChain(newAccounts);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const onClickConnect = async () => {
     try {
@@ -249,16 +282,25 @@ const initialize = async () => {
       signTypedDataV4.disabled = false;
     }
 
-      addEthereumChain.disabled = false;
-      switchEthereumChain.disabled = false;
+    addEthereumChain.disabled = false;
+    switchEthereumChain.disabled = false;
 
     if (isMetaMaskConnected()) {
       onboardButton.innerText = 'Connected';
       onboardButton.disabled = true;
+      if (window.ethereum.isBitizen) {
+        onboardButtonMultiChain.innerText = 'Connected';
+        onboardButtonMultiChain.disabled = true;
+      }
     } else {
       onboardButton.innerText = 'Connect';
       onboardButton.onclick = onClickConnect;
       onboardButton.disabled = false;
+      if (window.ethereum.isBitizen) {
+        onboardButtonMultiChain.innerText = 'Connect';
+        onboardButtonMultiChain.onclick = onClickConnectMultiChain;
+        onboardButtonMultiChain.disabled = false;
+      }
     }
   };
 
@@ -1146,11 +1188,42 @@ const initialize = async () => {
 
   function handleNewAccounts(newAccounts) {
     accounts = newAccounts;
-    accountsDiv.innerHTML = accounts;
-    fromDiv.value = accounts;
+    accountsDiv.innerHTML = accounts[0];
+    fromDiv.value = accounts[0];
     gasPriceDiv.style.display = 'block';
     maxFeeDiv.style.display = 'none';
     maxPriorityDiv.style.display = 'none';
+    if (isMetaMaskConnected()) {
+      initializeAccountButtons();
+    }
+    updateButtons();
+  }
+
+  function handleNewAccountsMultiChain(newAccounts, newChainIndex = 0) {
+    multiChainAccounts = newAccounts;
+    window.ethereum.chainId = '0x' + parseInt(Object.keys(newAccounts)[newChainIndex]).toString(16);
+    handleNewChain(window.ethereum.chainId)
+    handleNewNetwork(Object.keys(newAccounts)[newChainIndex])
+    accounts = newAccounts[Object.keys(newAccounts)[newChainIndex]];
+    accountsDiv.innerHTML = accounts[0];
+    fromDiv.value = accounts[0];
+    gasPriceDiv.style.display = 'block';
+    maxFeeDiv.style.display = 'none';
+    maxPriorityDiv.style.display = 'none';
+
+    let selectChainsOptionsInnerHtml = '';
+    Object.keys(newAccounts).forEach(chainId => {
+      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (window.ethereum.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainId}</option>`;
+    })
+    selectChainsOptions.innerHTML = selectChainsOptionsInnerHtml;
+
+    let selectAccountsOptionsInnerHtml = '';
+    for (let i = 0; i < accounts.length; i++) {
+      const a = accounts[i];
+      selectAccountsOptionsInnerHtml += `<option value="` + a + `" ` + (i == 0 ? 'selected' : '') + `>${a}</option>`
+    }
+    selectAccountsOptions.innerHTML = selectAccountsOptionsInnerHtml;
+
     if (isMetaMaskConnected()) {
       initializeAccountButtons();
     }
