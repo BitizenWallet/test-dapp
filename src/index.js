@@ -46,6 +46,7 @@ const getAccountsResults = document.getElementById('getAccountsResult');
 const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
 const selectChainsOptions = document.getElementById('selectChains')
 const selectAccountsOptions = document.getElementById('selectAccounts')
+const requestAccountsMultiChainButton = document.getElementById('requestAccountsMultiChain');
 
 // Permissions Actions Section
 const requestPermissionsButton = document.getElementById('requestPermissions');
@@ -190,6 +191,8 @@ const initialize = async () => {
     multiChainAccounts[parseInt(window.ethereum.chainId, 16)] = accounts;
     handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
   });
+
+  requestAccountsMultiChainButton.onclick = () => onClickConnectMultiChain();
 
   const accountButtons = [
     deployButton,
