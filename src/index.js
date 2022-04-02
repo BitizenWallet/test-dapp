@@ -175,9 +175,15 @@ const initialize = async () => {
     console.error(error);
   }
 
+  let chainInfos = {};
   let accounts;
   let multiChainAccounts;
   let accountButtonsInitialized = false;
+  fetch("https://chainid.network/chains.json").then(response => response.json()).then(data => {
+    data.forEach(chain => {
+      chainInfos[chain.chainId] = chain.name;
+    })
+  })
 
   selectChainsOptions.addEventListener('change', (event) => {
     window.ethereum.chainId = event.target.value;
@@ -1216,7 +1222,7 @@ const initialize = async () => {
 
     let selectChainsOptionsInnerHtml = '';
     Object.keys(newAccounts).forEach(chainId => {
-      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (window.ethereum.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainId}</option>`;
+      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (window.ethereum.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainInfos[chainId]}(${chainId})</option>`;
     })
     selectChainsOptions.innerHTML = selectChainsOptionsInnerHtml;
 
