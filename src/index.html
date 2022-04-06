@@ -33,21 +33,27 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
+        <div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12">
           <p class="info-text alert alert-primary">
             Network: <span id="network"></span>
           </p>
         </div>
 
-        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
+        <div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12">
           <p class="info-text alert alert-secondary">
             ChainId: <span id="chainId"></span>
           </p>
         </div>
 
-        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
+        <div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12">
           <p class="info-text alert alert-success">
-            Accounts: <span id="accounts"></span>
+            Account: <span id="accounts"></span>
+          </p>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12">
+          <p class="info-text alert alert-warning">
+            Balance: <span id="currentBalance"></span>
           </p>
         </div>
       </div>
@@ -81,6 +87,21 @@
                   <select class="browser-default custom-select" id="selectAccounts">
                   </select>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">
+                Balances
+              </h4>
+              <p class="info-text">
+                Multi-Chain RPC request demo
+              </p>
+              <div id="balancesMultiChain">
+
               </div>
             </div>
           </div>

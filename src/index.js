@@ -36,6 +36,7 @@ const networkDiv = document.getElementById('network');
 const chainIdDiv = document.getElementById('chainId');
 const accountsDiv = document.getElementById('accounts');
 const warningDiv = document.getElementById('warning');
+const currentBalanceDiv = document.getElementById('currentBalance');
 
 // Basic Actions Section
 const onboardButton = document.getElementById('connectButton');
@@ -44,9 +45,10 @@ const getAccountsResults = document.getElementById('getAccountsResult');
 
 // Multi Chain Actions Section
 const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
-const selectChainsOptions = document.getElementById('selectChains')
-const selectAccountsOptions = document.getElementById('selectAccounts')
+const selectChainsOptions = document.getElementById('selectChains');
+const selectAccountsOptions = document.getElementById('selectAccounts');
 const requestAccountsMultiChainButton = document.getElementById('requestAccountsMultiChain');
+const balancesMultiChainDiv = document.getElementById('balancesMultiChain');
 
 // Permissions Actions Section
 const requestPermissionsButton = document.getElementById('requestPermissions');
@@ -1197,8 +1199,9 @@ const initialize = async () => {
 
   function handleNewAccounts(newAccounts) {
     accounts = newAccounts;
-    accountsDiv.innerHTML = accounts[0];
-    fromDiv.value = accounts[0];
+    accountsDiv.innerHTML = accounts[0] || '';
+    fromDiv.value = accounts[0] || '';
+    ethereum.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
     gasPriceDiv.style.display = 'block';
     maxFeeDiv.style.display = 'none';
     maxPriorityDiv.style.display = 'none';
@@ -1208,14 +1211,34 @@ const initialize = async () => {
     updateButtons();
   }
 
+  async function updateMultiChainAccountBalances() {
+    let innerHTML = '';
+    const chainIds = Object.keys(multiChainAccounts);
+    for (let i = 0; i < chainIds.length; i++) {
+      const chainId = chainIds[i];
+      const chainName = chainInfos[chainId];
+      innerHTML += '<p class="info-text alert alert-secondary">' + chainName + ':<br>';
+      for (let j = 0; j < multiChainAccounts[chainId].length; j++) {
+        const account = multiChainAccounts[chainId][j];
+        const resp = await window.ethereum.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
+        innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
+      }
+      innerHTML += '</p>';
+    }
+    balancesMultiChainDiv.innerHTML = innerHTML;
+  }
+
   function handleNewAccountsMultiChain(newAccounts, newChainIndex = 0) {
     multiChainAccounts = newAccounts;
+    updateMultiChainAccountBalances();
+
     window.ethereum.chainId = '0x' + parseInt(Object.keys(newAccounts)[newChainIndex]).toString(16);
     handleNewChain(window.ethereum.chainId)
     handleNewNetwork(Object.keys(newAccounts)[newChainIndex])
     accounts = newAccounts[Object.keys(newAccounts)[newChainIndex]];
-    accountsDiv.innerHTML = accounts[0];
-    fromDiv.value = accounts[0];
+    accountsDiv.innerHTML = accounts[0] || '';
+    fromDiv.value = accounts[0] || '';
+    ethereum.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
     gasPriceDiv.style.display = 'block';
     maxFeeDiv.style.display = 'none';
     maxPriorityDiv.style.display = 'none';
