@@ -26,8 +26,6 @@ let collectiblesFactory;
 let failingContractFactory;
 
 const currentUrl = new URL(window.location.href);
-const forwarderOrigin =
-  currentUrl.hostname === 'localhost' ? 'http://localhost:9010' : undefined;
 
 const isMetaMaskInstalled = () => window.ethereum != null;
 
@@ -1220,8 +1218,12 @@ const initialize = async () => {
       innerHTML += '<p class="info-text alert alert-secondary">' + chainName + ':<br>';
       for (let j = 0; j < multiChainAccounts[chainId].length; j++) {
         const account = multiChainAccounts[chainId][j];
-        const resp = await window.ethereum.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
-        innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
+        try {
+          const resp = await window.ethereum.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
+          innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
+        } catch (error) {
+          innerHTML += account + ': failed ' + error + '<br>'
+        }
       }
       innerHTML += '</p>';
     }
