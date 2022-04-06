@@ -1222,7 +1222,7 @@ const initialize = async () => {
           const resp = await window.ethereum.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
           innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
         } catch (error) {
-          innerHTML += account + ': failed ' + error + '<br>'
+          innerHTML += account + ': failed ' + JSON.stringify(error) + '<br>'
         }
       }
       innerHTML += '</p>';
