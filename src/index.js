@@ -18,7 +18,7 @@ import {
   failingContractAbi,
   failingContractBytecode,
 } from './assets/constants.json';
-import ERC20Abi from './assets/ERC20.json';
+import ERC20Abi from './assets/erc20.json';
 
 let ethersProvider;
 let hstFactory;
