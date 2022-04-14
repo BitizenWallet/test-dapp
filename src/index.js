@@ -1432,7 +1432,7 @@ const initialize = async () => {
           handleEIP1559Support(block.baseFeePerGas !== undefined);
         });
     });
-    ethereum.on('networkChanged', handleNewNetwork);
+    ethereum.on('chainChanged', handleNewNetwork);
     ethereum.on('accountsChanged', (newAccounts) => {
       ethereum
         .request({
@@ -1456,7 +1456,7 @@ const initialize = async () => {
   }
 };
 
-window.addEventListener('DOMContentLoaded', initialize);
+window.addEventListener('load', initialize);
 
 // utils
 
