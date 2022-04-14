@@ -17,15 +17,14 @@ import {
   collectiblesBytecode,
   failingContractAbi,
   failingContractBytecode,
-} from './constants.json';
+} from './assets/constants.json';
+import ERC20Abi from './assets/ERC20.json';
 
 let ethersProvider;
 let hstFactory;
 let piggybankFactory;
 let collectiblesFactory;
 let failingContractFactory;
-
-const currentUrl = new URL(window.location.href);
 
 const isMetaMaskInstalled = () => window.ethereum != null;
 
@@ -44,9 +43,25 @@ const getAccountsResults = document.getElementById('getAccountsResult');
 // Multi Chain Actions Section
 const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
 const selectChainsOptions = document.getElementById('selectChains');
-const selectAccountsOptions = document.getElementById('selectAccounts');
+const selectAccountsOptions = Array.prototype.slice.call(document.getElementsByClassName('bitizen-selectAccounts'));
 const requestAccountsMultiChainButton = document.getElementById('requestAccountsMultiChain');
 const balancesMultiChainDiv = document.getElementById('balancesMultiChain');
+
+// Custom Contract Interaction Section
+const customFormAction = document.getElementById('customFormAction');
+const customContractInteractionStaff = document.getElementById('customContractInteractionStaff');
+const customFormTxType = document.getElementById('customFormTxType');
+const customFormGasPriceDiv = document.getElementById('customFormGasPriceDiv');
+const customFormMaxFeeDiv = document.getElementById('customFormMaxFeeDiv');
+const customFormMaxPriorityDiv = document.getElementById('customFormMaxPriorityDiv');
+const customFormFrom = document.getElementById('customFormFrom');
+const customFormGasPrice = document.getElementById('customFormGasPrice');
+const customFormMaxFee = document.getElementById('customFormMaxFee');
+const customFormMaxPriority = document.getElementById('customFormMaxPriority');
+const customFormGasLimit = document.getElementById('customFormGasLimit');
+const customFormValue = document.getElementById('customFormValue');
+const customFormContract = document.getElementById('customFormContract');
+const submitCustomFormButton = document.getElementById('submitCustomForm');
 
 // Permissions Actions Section
 const requestPermissionsButton = document.getElementById('requestPermissions');
@@ -185,18 +200,44 @@ const initialize = async () => {
     })
   })
 
+  // initialize the custom contract interaction
+  const onCustonFormActionsChanged = (newAction) => {
+    customContractInteractionStaff.innerHTML = '';
+    ERC20Abi.filter(a => a.name == newAction && a.stateMutability !== 'view' && a.type === 'function')[0].inputs.forEach((field, index) => {
+      customContractInteractionStaff.innerHTML += `
+        <div class="form-group">
+          <label>`+ field.name + ` (` + field.type + `)</label>
+          <input class="form-control border-primary" type="text"id="ca-`+ newAction + `-` + index + `"/>
+        </div>
+      `;
+    })
+  }
+
+  customFormAction.addEventListener('change', async (ev) => {
+    onCustonFormActionsChanged(ev.target.value);
+  })
+
+  customFormAction.innerHTML = '';
+  ERC20Abi.filter(a => a.name && a.stateMutability !== 'view' && a.type === 'function').forEach(a => {
+    if (!customFormAction.value) {
+      customFormAction.value = a.name
+      onCustonFormActionsChanged(a.name)
+    }
+    customFormAction.innerHTML += '<option value="' + a.name + '">' + a.name + '</option>';
+  })
+
   selectChainsOptions.addEventListener('change', (event) => {
     window.ethereum.chainId = event.target.value;
     handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
   });
 
-  selectAccountsOptions.addEventListener('change', (event) => {
+  selectAccountsOptions.forEach(sel => sel.addEventListener('change', (event) => {
     const a = accounts[0];
     accounts[accounts.findIndex((account) => account == event.target.value)] = a;
     accounts[0] = event.target.value;
     multiChainAccounts[parseInt(window.ethereum.chainId, 16)] = accounts;
     handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
-  });
+  }))
 
   requestAccountsMultiChainButton.onclick = () => onClickConnectMultiChain();
 
@@ -732,6 +773,18 @@ const initialize = async () => {
     };
   };
 
+  customFormTxType.onchange = async () => {
+    if (customFormTxType.value === '0x0') {
+      customFormGasPriceDiv.style.display = 'block';
+      customFormMaxFeeDiv.style.display = 'none';
+      customFormMaxPriorityDiv.style.display = 'none';
+    } else {
+      customFormGasPriceDiv.style.display = 'none';
+      customFormMaxFeeDiv.style.display = 'block';
+      customFormMaxPriorityDiv.style.display = 'block';
+    }
+  };
+
   type.onchange = async () => {
     if (type.value === '0x0') {
       gasPriceDiv.style.display = 'block';
@@ -742,6 +795,47 @@ const initialize = async () => {
       maxFeeDiv.style.display = 'block';
       maxPriorityDiv.style.display = 'block';
     }
+  };
+
+  submitCustomFormButton.onclick = async () => {
+    let params;
+    let iface = new ethers.utils.Interface(ERC20Abi);
+    let inputs = [];
+    customContractInteractionStaff.querySelectorAll("input").forEach(input => {
+      inputs.push((input.value.startsWith("[") && input.value.endsWith("[")) ? JSON.parse(input.value) : input.value);
+    })
+    console.log('bingo', inputs, iface);
+    if (customFormTxType.value === '0x0') {
+      params = [
+        {
+          from: customFormFrom.value,
+          to: customFormContract.value,
+          gasPrice: customFormGasPrice.value,
+          value: customFormValue.value,
+          gasLimit: customFormGasLimit.value,
+          data: iface.encodeFunctionData(customFormAction.value, inputs),
+          type: customFormTxType.value,
+        },
+      ];
+    } else {
+      params = [
+        {
+          from: customFormFrom.value,
+          to: customFormContract.value,
+          maxFeePerGas: customFormMaxFee.value,
+          maxPriorityFeePerGas: customFormMaxPriority.value,
+          value: customFormValue.value,
+          gasLimit: customFormGasLimit.value,
+          data: iface.encodeFunctionData(customFormAction.value, inputs),
+          type: customFormTxType.value,
+        },
+      ];
+    }
+    const result = await ethereum.request({
+      method: 'eth_sendTransaction',
+      params,
+    });
+    console.log(result);
   };
 
   submitFormButton.onclick = async () => {
@@ -1207,6 +1301,7 @@ const initialize = async () => {
       initializeAccountButtons();
     }
     updateButtons();
+    handleAccountsChanged();
   }
 
   async function updateMultiChainAccountBalances() {
@@ -1251,17 +1346,21 @@ const initialize = async () => {
     })
     selectChainsOptions.innerHTML = selectChainsOptionsInnerHtml;
 
-    let selectAccountsOptionsInnerHtml = '';
-    for (let i = 0; i < accounts.length; i++) {
-      const a = accounts[i];
-      selectAccountsOptionsInnerHtml += `<option value="` + a + `" ` + (i == 0 ? 'selected' : '') + `>${a}</option>`
-    }
-    selectAccountsOptions.innerHTML = selectAccountsOptionsInnerHtml;
+    handleAccountsChanged()
 
     if (isMetaMaskConnected()) {
       initializeAccountButtons();
     }
     updateButtons();
+  }
+
+  function handleAccountsChanged() {
+    let selectAccountsOptionsInnerHtml = '';
+    for (let i = 0; i < accounts.length; i++) {
+      const a = accounts[i];
+      selectAccountsOptionsInnerHtml += `<option value="` + a + `" ` + (i == 0 ? 'selected' : '') + `>${a}</option>`
+    }
+    selectAccountsOptions.forEach(sel => sel.innerHTML = selectAccountsOptionsInnerHtml);
   }
 
   function handleNewChain(chainId) {

@@ -27,13 +27,9 @@ header {
   flex-direction: column;
 }
 
-#logo-text {
-  padding-top: 15px;
-  padding-bottom: 5px;
-}
-
 #mm-logo {
   width: 100%;
+  padding-top: 3rem;
 }
 
 /* Encrypt/Decrypt */
@@ -67,4 +63,13 @@ header {
 
 .warning-invisible {
   display: none;
+}
+
+body {
+  background-color: #101316;
+  color: white;
+}
+
+.card {
+  background-color: rgba(255, 255, 255, 0.05);
 }
