@@ -6,7 +6,7 @@ import {
   recoverTypedSignature,
   recoverTypedSignature_v4 as recoverTypedSignatureV4,
 } from 'eth-sig-util';
-import { ethers } from 'ethers';
+import { ethers, logger } from 'ethers';
 import { toChecksumAddress } from 'ethereumjs-util';
 import {
   hstBytecode,
@@ -19,6 +19,11 @@ import {
   failingContractBytecode,
 } from './assets/constants.json';
 import ERC20Abi from './assets/erc20.json';
+import WalletConnectProvider from "@walletconnect/web3-provider";
+
+let walletConnectV1Provider = new WalletConnectProvider({
+  infuraId: "47e28e2b5fd04f5fae8752dd2f7f0c7c",
+});
 
 let ethersProvider;
 let hstFactory;
@@ -27,6 +32,8 @@ let collectiblesFactory;
 let failingContractFactory;
 
 const isMetaMaskInstalled = () => window.ethereum != null;
+
+let ether3um = window.ethereum;
 
 // Dapp Status Section
 const networkDiv = document.getElementById('network');
@@ -39,6 +46,10 @@ const currentBalanceDiv = document.getElementById('currentBalance');
 const onboardButton = document.getElementById('connectButton');
 const getAccountsButton = document.getElementById('getAccounts');
 const getAccountsResults = document.getElementById('getAccountsResult');
+
+// WalletConnect V1
+const walletConnectV1ConnectButton = document.getElementById('walletConnectV1ConnectButton');
+const walletConnectV1DisconnectButton = document.getElementById('walletConnectV1DisconnectButton');
 
 // Multi Chain Actions Section
 const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
@@ -162,10 +173,10 @@ const submitFormButton = document.getElementById('submitForm');
 const addEthereumChain = document.getElementById('addEthereumChain');
 const switchEthereumChain = document.getElementById('switchEthereumChain');
 
-const initialize = async () => {
+function initEthers() {
   try {
     // We must specify the network as 'any' for ethers to allow network changes
-    ethersProvider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    ethersProvider = new ethers.providers.Web3Provider(ether3um, 'any');
     hstFactory = new ethers.ContractFactory(
       hstAbi,
       hstBytecode,
@@ -187,8 +198,13 @@ const initialize = async () => {
       ethersProvider.getSigner(),
     );
   } catch (error) {
-    console.error(error);
+    console.error('initEthers', error);
   }
+}
+
+const initialize = async () => {
+
+  initEthers()
 
   let chainInfos = {};
   let accounts;
@@ -227,16 +243,16 @@ const initialize = async () => {
   })
 
   selectChainsOptions.addEventListener('change', (event) => {
-    window.ethereum.chainId = event.target.value;
-    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
+    ether3um.chainId = event.target.value;
+    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == ether3um.chainId));
   });
 
   selectAccountsOptions.forEach(sel => sel.addEventListener('change', (event) => {
     const a = accounts[0];
     accounts[accounts.findIndex((account) => account == event.target.value)] = a;
     accounts[0] = event.target.value;
-    multiChainAccounts[parseInt(window.ethereum.chainId, 16)] = accounts;
-    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == window.ethereum.chainId));
+    multiChainAccounts[parseInt(ether3um.chainId, 16)] = accounts;
+    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == ether3um.chainId));
   }))
 
   requestAccountsMultiChainButton.onclick = () => onClickConnectMultiChain();
@@ -276,9 +292,11 @@ const initialize = async () => {
 
   const onClickConnectMultiChain = async () => {
     try {
-      const newAccounts = await ethereum.request({
+      const newAccounts = await window.ethereum.request({
         method: 'eth_requestAccountsMultiChain',
       });
+      ether3um = window.ethereum;
+      initEthers()
       // const newAccounts = {
       //   1: ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000001'],
       //   42: ['0x0000000000000000000000000000000000000002', '0x0000000000000000000000000000000000000003'],
@@ -290,11 +308,25 @@ const initialize = async () => {
     }
   }
 
+  const onClickWCV1Connect = async () => {
+    try {
+      const newAccounts = await walletConnectV1Provider.enable()
+      console.log('onClickWCV1Connect', newAccounts);
+      ether3um = walletConnectV1Provider
+      initEthers()
+      handleNewAccounts(newAccounts);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   const onClickConnect = async () => {
     try {
-      const newAccounts = await ethereum.request({
+      const newAccounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       });
+      ether3um = window.ethereum;
+      initEthers()
       handleNewAccounts(newAccounts);
     } catch (error) {
       console.error(error);
@@ -310,7 +342,7 @@ const initialize = async () => {
 
   const updateButtons = () => {
     const accountButtonsDisabled =
-      !isMetaMaskInstalled() || !isMetaMaskConnected();
+      !isMetaMaskConnected();
     if (accountButtonsDisabled) {
       for (const button of accountButtons) {
         button.disabled = true;
@@ -335,18 +367,34 @@ const initialize = async () => {
     addEthereumChain.disabled = false;
     switchEthereumChain.disabled = false;
 
+    if (walletConnectV1Provider.connected) {
+      walletConnectV1DisconnectButton.style.display = 'block';
+      walletConnectV1DisconnectButton.onclick = async () => {
+        console.log("walletConnectV1DisconnectButton.onclick");
+        await walletConnectV1Provider.disconnect()
+        window.location.reload()
+      };
+      walletConnectV1ConnectButton.style.display = 'none';
+      return;
+    } else {
+      walletConnectV1DisconnectButton.style.display = 'none';
+      walletConnectV1ConnectButton.innerText = 'Connect (WalletConnectV1)';
+      walletConnectV1ConnectButton.disabled = false;
+      walletConnectV1ConnectButton.onclick = onClickWCV1Connect;
+    }
+
     if (isMetaMaskConnected()) {
-      onboardButton.innerText = 'Connected';
+      onboardButton.innerText = 'Connected (injectWeb3)';
       onboardButton.disabled = true;
-      if (window.ethereum.isBitizen) {
+      if (ether3um && ether3um.isBitizen) {
         onboardButtonMultiChain.innerText = 'Connected';
         onboardButtonMultiChain.disabled = true;
       }
     } else {
-      onboardButton.innerText = 'Connect';
+      onboardButton.innerText = 'Connect (injectWeb3)';
       onboardButton.onclick = onClickConnect;
       onboardButton.disabled = false;
-      if (window.ethereum.isBitizen) {
+      if (ether3um && ether3um.isBitizen) {
         onboardButtonMultiChain.innerText = 'Connect';
         onboardButtonMultiChain.onclick = onClickConnectMultiChain;
         onboardButtonMultiChain.disabled = false;
@@ -355,7 +403,7 @@ const initialize = async () => {
   };
 
   addEthereumChain.onclick = async () => {
-    await ethereum.request({
+    await ether3um.request({
       method: 'wallet_addEthereumChain',
       params: [
         {
@@ -370,7 +418,7 @@ const initialize = async () => {
   };
 
   switchEthereumChain.onclick = async () => {
-    await ethereum.request({
+    await ether3um.request({
       method: 'wallet_switchEthereumChain',
       params: [
         {
@@ -465,7 +513,7 @@ const initialize = async () => {
 
       sendFailingButton.onclick = async () => {
         try {
-          const result = await ethereum.request({
+          const result = await ether3um.request({
             method: 'eth_sendTransaction',
             params: [
               {
@@ -533,7 +581,7 @@ const initialize = async () => {
      */
 
     sendButton.onclick = async () => {
-      const result = await ethereum.request({
+      const result = await ether3um.request({
         method: 'eth_sendTransaction',
         params: [
           {
@@ -550,7 +598,7 @@ const initialize = async () => {
     };
 
     sendEIP1559Button.onclick = async () => {
-      const result = await ethereum.request({
+      const result = await ether3um.request({
         method: 'eth_sendTransaction',
         params: [
           {
@@ -599,7 +647,7 @@ const initialize = async () => {
         approveTokensWithoutGas.disabled = false;
 
         watchAsset.onclick = async () => {
-          const result = await ethereum.request({
+          const result = await ether3um.request({
             method: 'wallet_watchAsset',
             params: {
               type: 'ERC20',
@@ -675,7 +723,7 @@ const initialize = async () => {
 
     requestPermissionsButton.onclick = async () => {
       try {
-        const permissionsArray = await ethereum.request({
+        const permissionsArray = await ether3um.request({
           method: 'wallet_requestPermissions',
           params: [{ eth_accounts: {} }],
         });
@@ -689,7 +737,7 @@ const initialize = async () => {
 
     getPermissionsButton.onclick = async () => {
       try {
-        const permissionsArray = await ethereum.request({
+        const permissionsArray = await ether3um.request({
           method: 'wallet_getPermissions',
         });
         permissionsResult.innerHTML =
@@ -702,7 +750,7 @@ const initialize = async () => {
 
     getAccountsButton.onclick = async () => {
       try {
-        const _accounts = await ethereum.request({
+        const _accounts = await ether3um.request({
           method: 'eth_accounts',
         });
         getAccountsResults.innerHTML =
@@ -719,7 +767,7 @@ const initialize = async () => {
 
     getEncryptionKeyButton.onclick = async () => {
       try {
-        encryptionKeyDisplay.innerText = await ethereum.request({
+        encryptionKeyDisplay.innerText = await ether3um.request({
           method: 'eth_getEncryptionPublicKey',
           params: [accounts[0]],
         });
@@ -763,9 +811,9 @@ const initialize = async () => {
 
     decryptButton.onclick = async () => {
       try {
-        cleartextDisplay.innerText = await ethereum.request({
+        cleartextDisplay.innerText = await ether3um.request({
           method: 'eth_decrypt',
-          params: [ciphertextDisplay.innerText, ethereum.selectedAddress],
+          params: [ciphertextDisplay.innerText, ether3um.selectedAddress],
         });
       } catch (error) {
         cleartextDisplay.innerText = `Error: ${error.message}`;
@@ -804,7 +852,6 @@ const initialize = async () => {
     customContractInteractionStaff.querySelectorAll("input").forEach(input => {
       inputs.push((input.value.startsWith("[") && input.value.endsWith("[")) ? JSON.parse(input.value) : input.value);
     })
-    console.log('bingo', inputs, iface);
     if (customFormTxType.value === '0x0') {
       params = [
         {
@@ -831,7 +878,7 @@ const initialize = async () => {
         },
       ];
     }
-    const result = await ethereum.request({
+    const result = await ether3um.request({
       method: 'eth_sendTransaction',
       params,
     });
@@ -864,7 +911,7 @@ const initialize = async () => {
         },
       ];
     }
-    const result = await ethereum.request({
+    const result = await ether3um.request({
       method: 'eth_sendTransaction',
       params,
     });
@@ -880,7 +927,7 @@ const initialize = async () => {
       // const msgHash = keccak256(msg)
       const msg =
         '0x879a053d4800c6354e76c7985a865d2922c82fb5b3f4577b2fe08b998954f2e0';
-      const ethResult = await ethereum.request({
+      const ethResult = await ether3um.request({
         method: 'eth_sign',
         params: [accounts[0], msg],
       });
@@ -899,7 +946,7 @@ const initialize = async () => {
     try {
       const from = accounts[0];
       const msg = `0x${Buffer.from(exampleMessage, 'utf8').toString('hex')}`;
-      const sign = await ethereum.request({
+      const sign = await ether3um.request({
         method: 'personal_sign',
         params: [msg, from, 'Example password'],
       });
@@ -924,7 +971,7 @@ const initialize = async () => {
         data: msg,
         sig: sign,
       });
-      if (recoveredAddr === from) {
+      if (recoveredAddr.toLowerCase() === from.toLowerCase()) {
         console.log(`SigUtil Successfully verified signer as ${recoveredAddr}`);
         personalSignVerifySigUtilResult.innerHTML = recoveredAddr;
       } else {
@@ -933,11 +980,11 @@ const initialize = async () => {
         );
         console.log(`Failed comparing ${recoveredAddr} to ${from}`);
       }
-      const ecRecoverAddr = await ethereum.request({
+      const ecRecoverAddr = await ether3um.request({
         method: 'personal_ecRecover',
         params: [msg, sign],
       });
-      if (ecRecoverAddr === from) {
+      if (ecRecoverAddr.toLowerCase() === from.toLowerCase()) {
         console.log(`Successfully ecRecovered signer as ${ecRecoverAddr}`);
         personalSignVerifyECRecoverResult.innerHTML = ecRecoverAddr;
       } else {
@@ -970,7 +1017,7 @@ const initialize = async () => {
     ];
     try {
       const from = accounts[0];
-      const sign = await ethereum.request({
+      const sign = await ether3um.request({
         method: 'eth_signTypedData',
         params: [msgParams, from],
       });
@@ -1065,7 +1112,7 @@ const initialize = async () => {
     };
     try {
       const from = accounts[0];
-      const sign = await ethereum.request({
+      const sign = await ether3um.request({
         method: 'eth_signTypedData_v3',
         params: [from, JSON.stringify(msgParams)],
       });
@@ -1200,7 +1247,7 @@ const initialize = async () => {
     };
     try {
       const from = accounts[0];
-      const sign = await ethereum.request({
+      const sign = await ether3um.request({
         method: 'eth_signTypedData_v4',
         params: [from, JSON.stringify(msgParams)],
       });
@@ -1293,7 +1340,7 @@ const initialize = async () => {
     accounts = newAccounts;
     accountsDiv.innerHTML = accounts[0] || '';
     fromDiv.value = accounts[0] || '';
-    ethereum.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
+    ether3um.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
     gasPriceDiv.style.display = 'block';
     maxFeeDiv.style.display = 'none';
     maxPriorityDiv.style.display = 'none';
@@ -1314,7 +1361,7 @@ const initialize = async () => {
       for (let j = 0; j < multiChainAccounts[chainId].length; j++) {
         const account = multiChainAccounts[chainId][j];
         try {
-          const resp = await window.ethereum.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
+          const resp = await ether3um.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
           innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
         } catch (error) {
           innerHTML += account + ': failed ' + JSON.stringify(error) + '<br>'
@@ -1329,25 +1376,24 @@ const initialize = async () => {
     multiChainAccounts = newAccounts;
     updateMultiChainAccountBalances();
 
-    window.ethereum.chainId = '0x' + parseInt(Object.keys(newAccounts)[newChainIndex]).toString(16);
-    handleNewChain(window.ethereum.chainId)
-    handleNewNetwork(Object.keys(newAccounts)[newChainIndex])
+    ether3um.chainId = '0x' + parseInt(Object.keys(newAccounts)[newChainIndex]).toString(16);
+    handleNewChain(ether3um.chainId)
+    onNetworkChanged(Object.keys(newAccounts)[newChainIndex])
     accounts = newAccounts[Object.keys(newAccounts)[newChainIndex]];
     accountsDiv.innerHTML = accounts[0] || '';
     fromDiv.value = accounts[0] || '';
-    ethereum.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
+    ether3um.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
     gasPriceDiv.style.display = 'block';
     maxFeeDiv.style.display = 'none';
     maxPriorityDiv.style.display = 'none';
 
     let selectChainsOptionsInnerHtml = '';
     Object.keys(newAccounts).forEach(chainId => {
-      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (window.ethereum.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainInfos[chainId]}(${chainId})</option>`;
+      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (ether3um.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainInfos[chainId]}(${chainId})</option>`;
     })
     selectChainsOptions.innerHTML = selectChainsOptionsInnerHtml;
 
     handleAccountsChanged()
-
     if (isMetaMaskConnected()) {
       initializeAccountButtons();
     }
@@ -1385,23 +1431,61 @@ const initialize = async () => {
     }
   }
 
-  function handleNewNetwork(networkId) {
+  function onChainChanged(chain) {
+    console.log('onChainChanged', chain);
+    handleNewChain(chain);
+    ether3um
+      .request({
+        method: 'eth_getBlockByNumber',
+        params: ['latest', false],
+      })
+      .then((block) => {
+        handleEIP1559Support(block.baseFeePerGas !== undefined);
+      });
+  }
+
+  function onNetworkChanged(networkId) {
+    console.log('onNetworkChanged', networkId);
     networkDiv.innerHTML = networkId;
+  }
+
+  function onAccountChanged(newAccounts) {
+    console.log('onAccountChanged', newAccounts);
+    ether3um
+      .request({
+        method: 'eth_getBlockByNumber',
+        params: ['latest', false],
+      })
+      .then((block) => {
+        handleEIP1559Support(block.baseFeePerGas !== undefined);
+      });
+    handleNewAccounts(newAccounts);
+  }
+
+  const initWcV1Provider = () => {
+    walletConnectV1Provider.on('disconnect', () => {
+      console.log('wcv1 disconnect');
+      onAccountChanged([])
+      onChainChanged('')
+      onNetworkChanged('')
+      updateButtons()
+    });
+    return;
   }
 
   async function getNetworkAndChainId() {
     try {
-      const chainId = await ethereum.request({
+      const chainId = await ether3um.request({
         method: 'eth_chainId',
       });
       handleNewChain(chainId);
 
-      const networkId = await ethereum.request({
+      const networkId = await ether3um.request({
         method: 'net_version',
       });
-      handleNewNetwork(networkId);
+      onNetworkChanged(networkId);
 
-      const block = await ethereum.request({
+      const block = await ether3um.request({
         method: 'eth_getBlockByNumber',
         params: ['latest', false],
       });
@@ -1415,38 +1499,20 @@ const initialize = async () => {
   updateButtons();
 
   if (isMetaMaskInstalled()) {
-    ethereum.autoRefreshOnNetworkChange = false;
+    ether3um.autoRefreshOnNetworkChange = false;
     getNetworkAndChainId();
 
-    ethereum.autoRefreshOnNetworkChange = false;
+    ether3um.autoRefreshOnNetworkChange = false;
     getNetworkAndChainId();
 
-    ethereum.on('chainChanged', (chain) => {
-      handleNewChain(chain);
-      ethereum
-        .request({
-          method: 'eth_getBlockByNumber',
-          params: ['latest', false],
-        })
-        .then((block) => {
-          handleEIP1559Support(block.baseFeePerGas !== undefined);
-        });
-    });
-    ethereum.on('chainChanged', handleNewNetwork);
-    ethereum.on('accountsChanged', (newAccounts) => {
-      ethereum
-        .request({
-          method: 'eth_getBlockByNumber',
-          params: ['latest', false],
-        })
-        .then((block) => {
-          handleEIP1559Support(block.baseFeePerGas !== undefined);
-        });
-      handleNewAccounts(newAccounts);
-    });
+    ether3um.on('chainChanged', onChainChanged);
+    ether3um.on('networkChanged', onNetworkChanged);
+    ether3um.on('accountsChanged', onAccountChanged);
+
+    initWcV1Provider()
 
     try {
-      const newAccounts = await ethereum.request({
+      const newAccounts = await ether3um.request({
         method: 'eth_accounts',
       });
       handleNewAccounts(newAccounts);
