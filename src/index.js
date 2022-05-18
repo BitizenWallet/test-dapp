@@ -18,7 +18,14 @@ import {
   failingContractAbi,
   failingContractBytecode,
 } from './assets/constants.json';
-import ERC20Abi from './assets/erc20.json';
+import _ERC20Abi from './assets/erc20.json';
+import _ERC721Abi from './assets/erc721.json';
+import _ERC1155Abi from './assets/erc1155.json';
+const ABI_LIST = {
+  "ERC20": _ERC20Abi,
+  "ERC721": _ERC721Abi,
+  "ERC1155": _ERC1155Abi,
+}
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
 let walletConnectV1Provider = new WalletConnectProvider({
@@ -217,9 +224,9 @@ const initialize = async () => {
   })
 
   // initialize the custom contract interaction
-  const onCustonFormActionsChanged = (newAction) => {
+  const onCustonFormActionsChanged = (contractType, newAction) => {
     customContractInteractionStaff.innerHTML = '';
-    ERC20Abi.filter(a => a.name == newAction && a.stateMutability !== 'view' && a.type === 'function')[0].inputs.forEach((field, index) => {
+    ABI_LIST[contractType].filter(a => a.name == newAction && a.stateMutability !== 'view' && a.type === 'function')[0].inputs.forEach((field, index) => {
       customContractInteractionStaff.innerHTML += `
         <div class="form-group">
           <label>`+ field.name + ` (` + field.type + `)</label>
@@ -230,17 +237,22 @@ const initialize = async () => {
   }
 
   customFormAction.addEventListener('change', async (ev) => {
-    onCustonFormActionsChanged(ev.target.value);
+    const [contractType, newAction] = ev.target.value.split("#")
+    onCustonFormActionsChanged(contractType, newAction);
   })
 
   customFormAction.innerHTML = '';
-  ERC20Abi.filter(a => a.name && a.stateMutability !== 'view' && a.type === 'function').forEach(a => {
-    if (!customFormAction.value) {
-      customFormAction.value = a.name
-      onCustonFormActionsChanged(a.name)
+  for (const key in ABI_LIST) {
+    if (Object.hasOwnProperty.call(ABI_LIST, key)) {
+      ABI_LIST[key].filter(a => a.name && a.stateMutability !== 'view' && a.type === 'function').forEach(a => {
+        if (!customFormAction.value) {
+          customFormAction.value = a.name
+          onCustonFormActionsChanged(key, a.name)
+        }
+        customFormAction.innerHTML += '<option value="' + key + '#' + a.name + '">' + key + '#' + a.name + '</option>';
+      })
     }
-    customFormAction.innerHTML += '<option value="' + a.name + '">' + a.name + '</option>';
-  })
+  }
 
   selectChainsOptions.addEventListener('change', (event) => {
     ether3um.chainId = event.target.value;
@@ -847,7 +859,8 @@ const initialize = async () => {
 
   submitCustomFormButton.onclick = async () => {
     let params;
-    let iface = new ethers.utils.Interface(ERC20Abi);
+    let [contractType, actionName] = customFormAction.value.split('#')
+    let iface = new ethers.utils.Interface(ABI_LIST[contractType]);
     let inputs = [];
     customContractInteractionStaff.querySelectorAll("input").forEach(input => {
       inputs.push((input.value.startsWith("[") && input.value.endsWith("[")) ? JSON.parse(input.value) : input.value);
@@ -860,7 +873,7 @@ const initialize = async () => {
           gasPrice: customFormGasPrice.value,
           value: customFormValue.value,
           gasLimit: customFormGasLimit.value,
-          data: iface.encodeFunctionData(customFormAction.value, inputs),
+          data: iface.encodeFunctionData(actionName, inputs),
           type: customFormTxType.value,
         },
       ];
@@ -873,7 +886,7 @@ const initialize = async () => {
           maxPriorityFeePerGas: customFormMaxPriority.value,
           value: customFormValue.value,
           gasLimit: customFormGasLimit.value,
-          data: iface.encodeFunctionData(customFormAction.value, inputs),
+          data: iface.encodeFunctionData(actionName, inputs),
           type: customFormTxType.value,
         },
       ];
