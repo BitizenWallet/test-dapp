@@ -42,6 +42,8 @@ const isMetaMaskInstalled = () => window.ethereum != null;
 
 let ether3um = window.ethereum;
 
+const getFullNameFromAbi = (a) => a.name + '(' + a.inputs.map(item => item.type).join(',') + ')';
+
 // Dapp Status Section
 const networkDiv = document.getElementById('network');
 const chainIdDiv = document.getElementById('chainId');
@@ -226,7 +228,7 @@ const initialize = async () => {
   // initialize the custom contract interaction
   const onCustonFormActionsChanged = (contractType, newAction) => {
     customContractInteractionStaff.innerHTML = '';
-    ABI_LIST[contractType].filter(a => a.name == newAction && a.stateMutability !== 'view' && a.type === 'function')[0].inputs.forEach((field, index) => {
+    ABI_LIST[contractType].filter(a => getFullNameFromAbi(a) == newAction && a.stateMutability !== 'view' && a.type === 'function')[0].inputs.forEach((field, index) => {
       customContractInteractionStaff.innerHTML += `
         <div class="form-group">
           <label>`+ field.name + ` (` + field.type + `)</label>
@@ -245,11 +247,12 @@ const initialize = async () => {
   for (const key in ABI_LIST) {
     if (Object.hasOwnProperty.call(ABI_LIST, key)) {
       ABI_LIST[key].filter(a => a.name && a.stateMutability !== 'view' && a.type === 'function').forEach(a => {
+        const aNameFull = getFullNameFromAbi(a);
         if (!customFormAction.value) {
-          customFormAction.value = a.name
-          onCustonFormActionsChanged(key, a.name)
+          customFormAction.value = aNameFull
+          onCustonFormActionsChanged(key, aNameFull)
         }
-        customFormAction.innerHTML += '<option value="' + key + '#' + a.name + '">' + key + '#' + a.name + '</option>';
+        customFormAction.innerHTML += '<option value="' + key + '#' + aNameFull + '">' + key + '#' + aNameFull + '</option>';
       })
     }
   }
