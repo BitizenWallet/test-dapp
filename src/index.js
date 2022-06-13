@@ -83,6 +83,9 @@ const customFormValue = document.getElementById('customFormValue');
 const customFormContract = document.getElementById('customFormContract');
 const submitCustomFormButton = document.getElementById('submitCustomForm');
 
+// Custom RPC Request Form
+const customRpcRequestButton = document.getElementById('customRpcRequestButton');
+
 // Permissions Actions Section
 const requestPermissionsButton = document.getElementById('requestPermissions');
 const getPermissionsButton = document.getElementById('getPermissions');
@@ -859,6 +862,10 @@ const initialize = async () => {
       maxPriorityDiv.style.display = 'block';
     }
   };
+
+  customRpcRequestButton.onclick = async () => {
+    await ether3um.request(JSON.parse(document.getElementById('customRpcRequestPayload').value));
+  }
 
   submitCustomFormButton.onclick = async () => {
     let params;
