@@ -185,6 +185,14 @@ const submitFormButton = document.getElementById('submitForm');
 const addEthereumChain = document.getElementById('addEthereumChain');
 const switchEthereumChain = document.getElementById('switchEthereumChain');
 
+// Deep Linking Test
+const dlTestUri = document.getElementById('dlTestUri');
+const dlTestButton = document.getElementById('dlTestButton');
+
+dlTestButton.onclick = () => {
+  window.open("bitizen://wallet/go/wc?uri=" + dlTestUri.value);
+}
+
 function initEthers() {
   try {
     // We must specify the network as 'any' for ethers to allow network changes
