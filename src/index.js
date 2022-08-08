@@ -188,9 +188,19 @@ const switchEthereumChain = document.getElementById('switchEthereumChain');
 // Deep Linking Test
 const dlTestUri = document.getElementById('dlTestUri');
 const dlTestButton = document.getElementById('dlTestButton');
+const ulTestButton = document.getElementById('ulTestButton');
+const wclTestButton = document.getElementById('wclTestButton');
 
 dlTestButton.onclick = () => {
-  window.open("bitizen://wallet/go/wc?uri=" + dlTestUri.value);
+  window.open("bitizen://wallet/wc?uri=" + dlTestUri.value);
+}
+
+ulTestButton.onclick = () => {
+  window.open("https://bitizen.org/wallet/wc?uri=" + dlTestUri.value);
+}
+
+wclTestButton.onclick = () => {
+  window.open(dlTestUri.value);
 }
 
 function initEthers() {
