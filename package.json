@@ -34,10 +34,10 @@
   },
   "homepage": "https://metamask.github.io/test-dapp",
   "dependencies": {
-    "ethers": "^5.0.32",
+    "@bitizenwallet/connector-web3-provider": "^1.8.3",
     "eth-sig-util": "^2.5.3",
     "ethereumjs-util": "^5.1.1",
-    "@bitizenwallet/connector-web3-provider": "1.8.3"
+    "ethers": "^5.0.32"
   },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^1.0.6",
