@@ -358,7 +358,7 @@ const initialize = async () => {
   const onClickWCV1Connect = async () => {
     try {
       walletConnectV1Provider = new WalletConnectProvider({
-        infuraId: "INFURA_KEY",
+        infuraId: INFURA_KEY,
       });
       const newAccounts = await walletConnectV1Provider.enable()
       console.log('onClickWCV1Connect', newAccounts);
@@ -373,7 +373,8 @@ const initialize = async () => {
   const onClickBZCV1Connect = async () => {
     try {
       bitizenConnectV1Provider = new BitizenConnectProvider({
-        infuraId: "INFURA_KEY",
+        infuraId: INFURA_KEY,
+        bridge: 'https://bridge.bitizens.io',
       });
       const newAccounts = await bitizenConnectV1Provider.enable()
       console.log('onClickBZCV1Connect', newAccounts);
