@@ -373,8 +373,7 @@ const initialize = async () => {
   const onClickBZCV1Connect = async () => {
     try {
       bitizenConnectV1Provider = new BitizenConnectProvider({
-        infuraId: INFURA_KEY,
-        bridge: 'https://bridge.bitizens.io',
+        infuraId: INFURA_KEY
       });
       const newAccounts = await bitizenConnectV1Provider.enable()
       console.log('onClickBZCV1Connect', newAccounts);
