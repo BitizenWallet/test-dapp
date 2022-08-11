@@ -27,10 +27,17 @@ const ABI_LIST = {
   "ERC1155": _ERC1155Abi,
 }
 import WalletConnectProvider from "@walletconnect/web3-provider";
+import BitizenConnectProvider from "@bitizenwallet/connector-web3-provider";
 
-let walletConnectV1Provider = new WalletConnectProvider({
-  infuraId: "47e28e2b5fd04f5fae8752dd2f7f0c7c",
-});
+const INFURA_KEY = '27e484dcd9e3efcfd25a83a78777cdf1'; // 47e28e2b5fd04f5fae8752dd2f7f0c7c
+
+let walletConnectV1Provider = {
+  connected: false
+};
+
+let bitizenConnectV1Provider = {
+  connected: false
+};
 
 let ethersProvider;
 let hstFactory;
@@ -59,6 +66,10 @@ const getAccountsResults = document.getElementById('getAccountsResult');
 // WalletConnect V1
 const walletConnectV1ConnectButton = document.getElementById('walletConnectV1ConnectButton');
 const walletConnectV1DisconnectButton = document.getElementById('walletConnectV1DisconnectButton');
+
+// Bitizen Connect
+const bitizenConnectV1ConnectButton = document.getElementById('bitizenConnectV1ConnectButton');
+const bitizenConnectV1DisconnectButton = document.getElementById('bitizenConnectV1DisconnectButton');
 
 // Multi Chain Actions Section
 const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
@@ -346,9 +357,27 @@ const initialize = async () => {
 
   const onClickWCV1Connect = async () => {
     try {
+      walletConnectV1Provider = new WalletConnectProvider({
+        infuraId: "INFURA_KEY",
+      });
       const newAccounts = await walletConnectV1Provider.enable()
       console.log('onClickWCV1Connect', newAccounts);
       ether3um = walletConnectV1Provider
+      initEthers()
+      handleNewAccounts(newAccounts);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const onClickBZCV1Connect = async () => {
+    try {
+      bitizenConnectV1Provider = new BitizenConnectProvider({
+        infuraId: "INFURA_KEY",
+      });
+      const newAccounts = await bitizenConnectV1Provider.enable()
+      console.log('onClickBZCV1Connect', newAccounts);
+      ether3um = bitizenConnectV1Provider
       initEthers()
       handleNewAccounts(newAccounts);
     } catch (error) {
@@ -417,6 +446,22 @@ const initialize = async () => {
       walletConnectV1ConnectButton.innerText = 'Connect (WalletConnectV1)';
       walletConnectV1ConnectButton.disabled = false;
       walletConnectV1ConnectButton.onclick = onClickWCV1Connect;
+    }
+
+    if (bitizenConnectV1Provider.connected) {
+      bitizenConnectV1DisconnectButton.style.display = 'block';
+      bitizenConnectV1DisconnectButton.onclick = async () => {
+        console.log("bitizenConnectV1DisconnectButton.onclick");
+        await bitizenConnectV1Provider.disconnect()
+        window.location.reload()
+      };
+      bitizenConnectV1ConnectButton.style.display = 'none';
+      return;
+    } else {
+      bitizenConnectV1DisconnectButton.style.display = 'none';
+      bitizenConnectV1ConnectButton.innerText = 'Connect (Bitzen)';
+      bitizenConnectV1ConnectButton.disabled = false;
+      bitizenConnectV1ConnectButton.onclick = onClickBZCV1Connect;
     }
 
     if (isMetaMaskConnected()) {
@@ -1514,6 +1559,17 @@ const initialize = async () => {
     return;
   }
 
+  const initBzcV1Provider = () => {
+    bitizenConnectV1Provider.on('disconnect', () => {
+      console.log('bitizenConnectV1Provider disconnect');
+      onAccountChanged([])
+      onChainChanged('')
+      onNetworkChanged('')
+      updateButtons()
+    });
+    return;
+  }
+
   async function getNetworkAndChainId() {
     try {
       const chainId = await ether3um.request({
@@ -1551,6 +1607,7 @@ const initialize = async () => {
     ether3um.on('accountsChanged', onAccountChanged);
 
     initWcV1Provider()
+    initBzcV1Provider()
 
     try {
       const newAccounts = await ether3um.request({
