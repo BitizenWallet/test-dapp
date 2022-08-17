@@ -936,7 +936,7 @@ const initialize = async () => {
     let iface = new ethers.utils.Interface(ABI_LIST[contractType]);
     let inputs = [];
     customContractInteractionStaff.querySelectorAll("input").forEach(input => {
-      inputs.push((input.value.startsWith("[") && input.value.endsWith("[")) ? JSON.parse(input.value) : input.value);
+      inputs.push((input.value.startsWith("[") && input.value.endsWith("]")) ? JSON.parse(input.value) : input.value);
     })
     if (customFormTxType.value === '0x0') {
       params = [
