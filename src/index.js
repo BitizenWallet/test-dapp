@@ -1283,7 +1283,7 @@ const initialize = async () => {
     const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
     const msgParams = {
       domain: {
-        chainId: chainId.toString(),
+        chainId: chainId,
         name: 'Ether Mail',
         verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
         version: '1',
