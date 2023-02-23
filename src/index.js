@@ -927,7 +927,7 @@ const initialize = async () => {
   };
 
   customRpcRequestButton.onclick = async () => {
-    await ether3um.request(JSON.parse(document.getElementById('customRpcRequestPayload').value));
+    await ether3um.request(JSON.parse(document.getElementById('customRpcRequestPayload').value.replace(/(\r\n|\n|\r)/gm, "")));
   }
 
   submitCustomFormButton.onclick = async () => {
@@ -936,7 +936,7 @@ const initialize = async () => {
     let iface = new ethers.utils.Interface(ABI_LIST[contractType]);
     let inputs = [];
     customContractInteractionStaff.querySelectorAll("input").forEach(input => {
-      inputs.push((input.value.startsWith("[") && input.value.endsWith("]")) ? JSON.parse(input.value) : input.value);
+      inputs.push((input.value.startsWith("[") && input.value.endsWith("]")) ? JSON.parse(input.value.replace(/(\r\n|\n|\r)/gm, "")) : input.value);
     })
     if (customFormTxType.value === '0x0') {
       params = [
