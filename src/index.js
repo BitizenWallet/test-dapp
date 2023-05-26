@@ -6,7 +6,7 @@ import {
   recoverTypedSignature,
   recoverTypedSignature_v4 as recoverTypedSignatureV4,
 } from 'eth-sig-util';
-import { ethers, logger } from 'ethers';
+import { BigNumber, ethers, logger } from 'ethers';
 import { toChecksumAddress } from 'ethereumjs-util';
 import {
   hstBytecode,
@@ -21,6 +21,8 @@ import {
 import _ERC20Abi from './assets/erc20.json';
 import _ERC721Abi from './assets/erc721.json';
 import _ERC1155Abi from './assets/erc1155.json';
+import _LIFIAbi from './assets/lifi.json';
+import _BitizenGateway from './assets/bitizengateway.json';
 const ABI_LIST = {
   "ERC20": _ERC20Abi,
   "ERC721": _ERC721Abi,
@@ -28,15 +30,18 @@ const ABI_LIST = {
 }
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import BitizenConnectProvider from "@bitizenwallet/connector-web3-provider";
+import { signERC2612Permit } from 'eth-permit';
 
 const INFURA_KEY = '27e484dcd9e3efcfd25a83a78777cdf1'; // 47e28e2b5fd04f5fae8752dd2f7f0c7c
 
 let walletConnectV1Provider = {
-  connected: false
+  connected: false,
+  on: () => { },
 };
 
 let bitizenConnectV1Provider = {
-  connected: false
+  connected: false,
+  on: () => { },
 };
 
 let ethersProvider;
@@ -177,6 +182,8 @@ const signTypedDataV4Verify = document.getElementById('signTypedDataV4Verify');
 const signTypedDataV4VerifyResult = document.getElementById(
   'signTypedDataV4VerifyResult',
 );
+const signPermit2 = document.getElementById('signPermit2');
+const signPermit2Result = document.getElementById('signPermit2Result');
 
 // Send form section
 const fromDiv = document.getElementById('fromInput');
@@ -201,6 +208,26 @@ const dlTestUri = document.getElementById('dlTestUri');
 const dlTestButton = document.getElementById('dlTestButton');
 const ulTestButton = document.getElementById('ulTestButton');
 const wclTestButton = document.getElementById('wclTestButton');
+
+// Bitizen Gateway
+const wrapToBitizenGateway = document.getElementById('wrapToBitizenGateway');
+const bitizenGatewayRawTransacion = document.getElementById('bitizenGatewayRawTransacion');
+
+const copyObjectWithoutNumberKeys = (obj) => {
+  if (obj instanceof Array && Object.keys(obj).filter((key) => !isNaN(key)).length === 1) {
+    return obj.map((o) => copyObjectWithoutNumberKeys(o));
+  }
+  if (obj instanceof BigNumber || !obj || typeof obj !== 'object') {
+    return obj;
+  }
+  const newObj = {};
+  for (const key in obj) {
+    if (isNaN(key)) {
+      newObj[key] = copyObjectWithoutNumberKeys(obj[key]);
+    }
+  }
+  return newObj;
+};
 
 dlTestButton.onclick = () => {
   window.open("bitizen://wallet/wc?uri=" + dlTestUri.value);
@@ -333,6 +360,7 @@ const initialize = async () => {
     signTypedDataV3Verify,
     signTypedDataV4,
     signTypedDataV4Verify,
+    signPermit2,
   ];
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
@@ -427,6 +455,7 @@ const initialize = async () => {
       signTypedData.disabled = false;
       signTypedDataV3.disabled = false;
       signTypedDataV4.disabled = false;
+      signPermit2.disabled = false;
     }
 
     addEthereumChain.disabled = false;
@@ -1421,6 +1450,54 @@ const initialize = async () => {
       signTypedDataV4VerifyResult.innerHTML = `Error: ${err.message}`;
     }
   };
+
+  signPermit2.onclick = async () => {
+    const sign = await signERC2612Permit(ether3um, '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', accounts[0], '0x000000000000000000000000000000000000dEaD', '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+    signPermit2Result.innerHTML = sign;
+  }
+
+  wrapToBitizenGateway.onclick = async () => {
+    const rawTx = bitizenGatewayRawTransacion.value.trim();
+    if (!rawTx) {
+      alert('Please enter a raw transaction');
+      return;
+    }
+    let iface = new ethers.utils.Interface(_LIFIAbi);
+    const signer = ethersProvider.getSigner();
+    console.log('signer', signer);
+    const bitizenGateway = new ethers.Contract("0xB3284b4Dd4f0E62f5597b79D1137460538fcD4dA", _BitizenGateway, signer);
+    console.log('bitizenGateway', bitizenGateway);
+
+    try {
+      const res = copyObjectWithoutNumberKeys(iface.decodeFunctionData('swapTokensGeneric', rawTx));
+      console.log('swapTokensGeneric', res);
+      bitizenGateway.swapTokensGeneric(res._transactionId, res._minAmount, "test-dapp", res._swapData, {
+        from: accounts[0],
+        value: res._swapData[0].fromAmount.mul(ethers.BigNumber.from(12)).div(ethers.BigNumber.from(10))
+      });
+      return;
+    } catch (error) {
+    }
+
+    try {
+      let res = copyObjectWithoutNumberKeys(iface.decodeFunctionData('swapAndStartBridgeTokensViaAmarok', rawTx));
+      res._bridgeData.integrator = 'bitizen';
+      res._bridgeData.referrer = '0xDadada681e6270E1D0181442220A2e5608B11d21';
+      console.log('swapAndStartBridgeTokensViaAmarok', res);
+      console.log(bitizenGateway,'params', res._bridgeData, res._swapData, res._amarokData, {
+        from: accounts[0],
+        value: res._swapData[0].fromAmount.add(res._amarokData.relayerFee).mul(ethers.BigNumber.from(12)).div(ethers.BigNumber.from(10))
+      });
+      bitizenGateway.swapAndStartBridgeTokensViaAmarok(res._bridgeData, res._swapData, res._amarokData, {
+        from: accounts[0],
+        value: res._swapData[0].fromAmount.add(res._amarokData.relayerFee).mul(ethers.BigNumber.from(12)).div(ethers.BigNumber.from(10))
+      }).catch((e) => console.log(e));
+      return;
+    } catch (error) {
+    }
+
+    alert('Requires a token swap same chain or swap and bridge via amarok')
+  }
 
   function handleNewAccounts(newAccounts) {
     accounts = newAccounts;
