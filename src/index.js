@@ -6,7 +6,7 @@ import {
   recoverTypedSignature,
   recoverTypedSignature_v4 as recoverTypedSignatureV4,
 } from 'eth-sig-util';
-import { BigNumber, ethers, logger } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { toChecksumAddress } from 'ethereumjs-util';
 import {
   hstBytecode,
@@ -30,7 +30,6 @@ const ABI_LIST = {
 }
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import BitizenConnectProvider from "@bitizenwallet/connector-web3-provider";
-import { signERC2612Permit } from 'eth-permit';
 
 let walletConnectV1Provider = {
   connected: false,
