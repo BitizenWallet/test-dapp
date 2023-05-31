@@ -32,8 +32,6 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 import BitizenConnectProvider from "@bitizenwallet/connector-web3-provider";
 import { signERC2612Permit } from 'eth-permit';
 
-const INFURA_KEY = '27e484dcd9e3efcfd25a83a78777cdf1'; // 47e28e2b5fd04f5fae8752dd2f7f0c7c
-
 let walletConnectV1Provider = {
   connected: false,
   on: () => { },
@@ -386,13 +384,14 @@ const initialize = async () => {
   const onClickWCV1Connect = async () => {
     try {
       walletConnectV1Provider = new WalletConnectProvider({
-        infuraId: INFURA_KEY,
+        rpc: { 1: 'https://cloudflare-eth.com/' },
       });
       const newAccounts = await walletConnectV1Provider.enable()
       console.log('onClickWCV1Connect', newAccounts);
       ether3um = walletConnectV1Provider
       initEthers()
-      handleNewAccounts(newAccounts);
+      handleNewAccounts(newAccounts)
+      getNetworkAndChainId()
     } catch (error) {
       console.error(error);
     }
@@ -401,13 +400,14 @@ const initialize = async () => {
   const onClickBZCV1Connect = async () => {
     try {
       bitizenConnectV1Provider = new BitizenConnectProvider({
-        infuraId: INFURA_KEY
+        rpc: { 1: 'https://cloudflare-eth.com/' }
       });
       const newAccounts = await bitizenConnectV1Provider.enable()
       console.log('onClickBZCV1Connect', newAccounts);
       ether3um = bitizenConnectV1Provider
       initEthers()
-      handleNewAccounts(newAccounts);
+      handleNewAccounts(newAccounts)
+      getNetworkAndChainId()
     } catch (error) {
       console.error(error);
     }
@@ -420,7 +420,8 @@ const initialize = async () => {
       });
       ether3um = window.ethereum;
       initEthers()
-      handleNewAccounts(newAccounts);
+      handleNewAccounts(newAccounts)
+      getNetworkAndChainId()
     } catch (error) {
       console.error(error);
     }
@@ -1134,7 +1135,7 @@ const initialize = async () => {
       const from = accounts[0];
       const sign = await ether3um.request({
         method: 'eth_signTypedData',
-        params: [msgParams, from],
+        params: [JSON.stringify(msgParams), from],
       });
       signTypedDataResult.innerHTML = sign;
       signTypedDataVerify.disabled = false;
@@ -1312,10 +1313,10 @@ const initialize = async () => {
     const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
     const msgParams = {
       domain: {
-        chainId: chainId,
         name: 'Ether Mail',
         verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
         version: '1',
+        chainId,
       },
       message: {
         contents: 'Hello, Bob!',
@@ -1452,8 +1453,60 @@ const initialize = async () => {
   };
 
   signPermit2.onclick = async () => {
-    const sign = await signERC2612Permit(ether3um, '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', accounts[0], '0x000000000000000000000000000000000000dEaD', '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
-    signPermit2Result.innerHTML = sign;
+    const networkId = parseInt(networkDiv.innerHTML, 10);
+    const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
+    const from = accounts[0];
+
+    const domain = {
+      name: 'MyToken',
+      version: '1',
+      verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+      chainId,
+    };
+
+    const EIP712Domain = [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'verifyingContract', type: 'address' },
+      { name: 'chainId', type: 'uint256' },
+    ];
+
+    const permit = {
+      owner: from,
+      spender: '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4',
+      value: 3000,
+      nonce: 0,
+      deadline: 50000000000,
+    };
+
+    const Permit = [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
+    ];
+
+    const msgParams = {
+      types: {
+        EIP712Domain,
+        Permit,
+      },
+      primaryType: 'Permit',
+      domain,
+      message: permit,
+    };
+
+    try {
+      const sign = await ether3um.request({
+        method: 'eth_signTypedData_v4',
+        params: [from, JSON.stringify(msgParams)],
+      });
+      signPermit2Result.innerHTML = sign;
+    } catch (err) {
+      console.error(err);
+      signPermit2Result.innerHTML = `Error: ${err.message}`;
+    }
   }
 
   wrapToBitizenGateway.onclick = async () => {
@@ -1484,7 +1537,7 @@ const initialize = async () => {
       res._bridgeData.integrator = 'bitizen';
       res._bridgeData.referrer = '0xDadada681e6270E1D0181442220A2e5608B11d21';
       console.log('swapAndStartBridgeTokensViaAmarok', res);
-      console.log(bitizenGateway,'params', res._bridgeData, res._swapData, res._amarokData, {
+      console.log(bitizenGateway, 'params', res._bridgeData, res._swapData, res._amarokData, {
         from: accounts[0],
         value: res._swapData[0].fromAmount.add(res._amarokData.relayerFee).mul(ethers.BigNumber.from(12)).div(ethers.BigNumber.from(10))
       });

@@ -35,7 +35,6 @@
   "homepage": "https://metamask.github.io/test-dapp",
   "dependencies": {
     "@bitizenwallet/connector-web3-provider": "^1.8.3",
-    "eth-permit": "^0.2.3",
     "eth-sig-util": "^2.5.3",
     "ethereumjs-util": "^5.1.1",
     "ethers": "^5.0.32"
