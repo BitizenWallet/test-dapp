@@ -129,6 +129,7 @@ const sendEIP1559Button = document.getElementById('sendEIP1559Button');
 const tokenAddress = document.getElementById('tokenAddress');
 const createToken = document.getElementById('createToken');
 const watchAsset = document.getElementById('watchAsset');
+const watchTBT = document.getElementById('watchTBT');
 const transferTokens = document.getElementById('transferTokens');
 const approveTokens = document.getElementById('approveTokens');
 const transferTokensWithoutGas = document.getElementById(
@@ -179,8 +180,8 @@ const signTypedDataV4Verify = document.getElementById('signTypedDataV4Verify');
 const signTypedDataV4VerifyResult = document.getElementById(
   'signTypedDataV4VerifyResult',
 );
-const signPermit2 = document.getElementById('signPermit2');
-const signPermit2Result = document.getElementById('signPermit2Result');
+const signPermit = document.getElementById('signPermit');
+const signPermitResult = document.getElementById('signPermitResult');
 
 // Send form section
 const fromDiv = document.getElementById('fromInput');
@@ -357,7 +358,7 @@ const initialize = async () => {
     signTypedDataV3Verify,
     signTypedDataV4,
     signTypedDataV4Verify,
-    signPermit2,
+    signPermit,
   ];
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
@@ -455,11 +456,12 @@ const initialize = async () => {
       signTypedData.disabled = false;
       signTypedDataV3.disabled = false;
       signTypedDataV4.disabled = false;
-      signPermit2.disabled = false;
+      signPermit.disabled = false;
     }
 
     addEthereumChain.disabled = false;
     switchEthereumChain.disabled = false;
+    watchTBT.disabled = false;
 
     if (walletConnectV1Provider.connected) {
       walletConnectV1DisconnectButton.style.display = 'block';
@@ -517,11 +519,13 @@ const initialize = async () => {
       method: 'wallet_addEthereumChain',
       params: [
         {
-          chainId: '0x64',
-          rpcUrls: ['https://dai.poa.network'],
-          chainName: 'xDAI Chain',
-          nativeCurrency: { name: 'xDAI', decimals: 18, symbol: 'xDAI' },
-          blockExplorerUrls: ['https://blockscout.com/poa/xdai'],
+          chainId: '0x2AC2',
+          rpcUrls: ["https://rpc.quadrans.io",
+            "https://rpcna.quadrans.io",
+            "https://rpceu.quadrans.io"],
+          chainName: 'Quadrans Blockchain',
+          nativeCurrency: { name: 'Quadrans Coin', decimals: 18, symbol: 'QDC' },
+          blockExplorerUrls: ['https://explorer.quadrans.io'],
         },
       ],
     });
@@ -532,7 +536,7 @@ const initialize = async () => {
       method: 'wallet_switchEthereumChain',
       params: [
         {
-          chainId: '0x64',
+          chainId: '0x2AC2',
         },
       ],
     });
@@ -722,6 +726,22 @@ const initialize = async () => {
         ],
       });
       console.log(result);
+    };
+
+    watchTBT.onclick = async () => {
+      const result = await ether3um.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: '0xce5b0b1748d6bb4897ba00e41ebc17b00b980f4d',
+            symbol: 'TBT',
+            decimals: 18,
+            image: 'https://metamask.github.io/test-dapp/metamask-fox.svg',
+          },
+        },
+      });
+      console.log('result', result);
     };
 
     /**
@@ -1451,7 +1471,7 @@ const initialize = async () => {
     }
   };
 
-  signPermit2.onclick = async () => {
+  signPermit.onclick = async () => {
     const networkId = parseInt(networkDiv.innerHTML, 10);
     const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
     const from = accounts[0];
@@ -1501,10 +1521,10 @@ const initialize = async () => {
         method: 'eth_signTypedData_v4',
         params: [from, JSON.stringify(msgParams)],
       });
-      signPermit2Result.innerHTML = sign;
+      signPermitResult.innerHTML = sign;
     } catch (err) {
       console.error(err);
-      signPermit2Result.innerHTML = `Error: ${err.message}`;
+      signPermitResult.innerHTML = `Error: ${err.message}`;
     }
   }
 
