@@ -50,6 +50,14 @@ const isMetaMaskInstalled = () => window.ethereum != null;
 
 let ether3um = window.ethereum;
 
+const selectAccountsOptions = Array.prototype.slice.call(document.getElementsByClassName('bitizen-selectAccounts'));
+
+selectAccountsOptions.forEach(sel => sel.addEventListener('change', (event) => {
+  const a = accounts[0];
+  accounts[accounts.findIndex((account) => account == event.target.value)] = a;
+  accounts[0] = event.target.value;
+}))
+
 const getFullNameFromAbi = (a) => a.name + '(' + a.inputs.map(item => item.type).join(',') + ')';
 
 // Dapp Status Section
@@ -1495,6 +1503,12 @@ const initialize = async () => {
     if (isMetaMaskConnected()) {
       initializeAccountButtons();
     }
+    let selectAccountsOptionsInnerHtml = '';
+    for (let i = 0; i < accounts.length; i++) {
+      const a = accounts[i];
+      selectAccountsOptionsInnerHtml += `<option value="` + a + `" ` + (i == 0 ? 'selected' : '') + `>${a}</option>`
+    }
+    selectAccountsOptions.forEach(sel => sel.innerHTML = selectAccountsOptionsInnerHtml);
     updateButtons();
   }
 
