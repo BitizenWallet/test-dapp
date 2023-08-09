@@ -4,7 +4,7 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html"
+    "build": "parcel build src/index.html --public-url /test-dapp/"
   },
   "dependencies": {
     "@bitizenwallet/connector-web3-provider": "^1.8.3",
