@@ -63,74 +63,15 @@
           <div class="card">
             <div class="card-body">
               <h4 class="card-title">
-                Multi-Chain Dapp
-              </h4>
-
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="connectButtonMultiChain" disabled>
-                Unsupported
-              </button>
-
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="requestAccountsMultiChain">
-                eth_requestaccountsmultichain
-              </button>
-
-              <div class="info-text alert alert-secondary">
-                <div class="form-group">
-                  <label>Switch Chain</label>
-                  <select class="browser-default custom-select" id="selectChains">
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Switch Account</label>
-                  <select class="browser-default custom-select bitizen-selectAccounts">
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
-          <div class="card">
-            <div class="card-body">
-              <h4 class="card-title">
-                Balances
-              </h4>
-              <p class="info-text">
-                Multi-Chain RPC request demo
-              </p>
-              <div id="balancesMultiChain">
-
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12">
-          <div class="card">
-            <div class="card-body">
-              <h4 class="card-title">
                 Legacy Single-Chain Dapp
               </h4>
 
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="connectButton" disabled>
+              <button class="btn btn-primary btn-lg btn-block mb-3" id="connectButton">
                 Connect (injectWeb3)
               </button>
 
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="walletConnectV1ConnectButton" disabled>
-                Connect (WalletConnectV1)
-              </button>
-
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="walletConnectV1DisconnectButton"
-                style="display: none;">
-                Disconnect (WalletConnectV1)
-              </button>
-
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="bitizenConnectV1ConnectButton" disabled>
-                Connect (Bitizen)
-              </button>
-
-              <button class="btn btn-primary btn-lg btn-block mb-3" id="bitizenConnectV1DisconnectButton"
-                style="display: none;">
-                Disconnect (Bitizen)
+              <button class="btn btn-primary btn-lg btn-block mb-3" id="connectWCV2Button">
+                Connect (WalletConnect V2)
               </button>
 
               <button class="btn btn-primary btn-lg btn-block mb-3" id="getAccounts">
@@ -679,7 +620,7 @@
     </section>
   </main>
 
-  <script src="bundle.js" defer></script>
+  <script src="index.js" type="module"></script>
 </body>
 
 </html>

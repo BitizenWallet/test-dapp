@@ -28,18 +28,17 @@ const ABI_LIST = {
   "ERC721": _ERC721Abi,
   "ERC1155": _ERC1155Abi,
 }
-import WalletConnectProvider from "@walletconnect/web3-provider";
-import BitizenConnectProvider from "@bitizenwallet/connector-web3-provider";
+import { WalletConnectModalSign } from '@walletconnect/modal-sign-html';
 
-let walletConnectV1Provider = {
-  connected: false,
-  on: () => { },
-};
-
-let bitizenConnectV1Provider = {
-  connected: false,
-  on: () => { },
-};
+const wcV2Modal = new WalletConnectModalSign({
+  projectId: 'b011808e8bd2a2dfda13334db8afab70',
+  metadata: {
+    name: 'My Dapp',
+    description: 'My Dapp Description',
+    url: 'mydapp.com',
+    icons: ['https://mydapp-logo.png']
+  }
+})
 
 let ethersProvider;
 let hstFactory;
@@ -62,23 +61,9 @@ const currentBalanceDiv = document.getElementById('currentBalance');
 
 // Basic Actions Section
 const onboardButton = document.getElementById('connectButton');
+const wcV2Button = document.getElementById('connectWCV2Button');
 const getAccountsButton = document.getElementById('getAccounts');
 const getAccountsResults = document.getElementById('getAccountsResult');
-
-// WalletConnect V1
-const walletConnectV1ConnectButton = document.getElementById('walletConnectV1ConnectButton');
-const walletConnectV1DisconnectButton = document.getElementById('walletConnectV1DisconnectButton');
-
-// Bitizen Connect
-const bitizenConnectV1ConnectButton = document.getElementById('bitizenConnectV1ConnectButton');
-const bitizenConnectV1DisconnectButton = document.getElementById('bitizenConnectV1DisconnectButton');
-
-// Multi Chain Actions Section
-const onboardButtonMultiChain = document.getElementById('connectButtonMultiChain');
-const selectChainsOptions = document.getElementById('selectChains');
-const selectAccountsOptions = Array.prototype.slice.call(document.getElementsByClassName('bitizen-selectAccounts'));
-const requestAccountsMultiChainButton = document.getElementById('requestAccountsMultiChain');
-const balancesMultiChainDiv = document.getElementById('balancesMultiChain');
 
 // Custom Contract Interaction Section
 const customFormAction = document.getElementById('customFormAction');
@@ -274,7 +259,6 @@ const initialize = async () => {
 
   let chainInfos = {};
   let accounts;
-  let multiChainAccounts;
   let accountButtonsInitialized = false;
   fetch("https://chainid.network/chains.json").then(response => response.json()).then(data => {
     data.forEach(chain => {
@@ -314,21 +298,6 @@ const initialize = async () => {
     }
   }
 
-  selectChainsOptions.addEventListener('change', (event) => {
-    ether3um.chainId = event.target.value;
-    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == ether3um.chainId));
-  });
-
-  selectAccountsOptions.forEach(sel => sel.addEventListener('change', (event) => {
-    const a = accounts[0];
-    accounts[accounts.findIndex((account) => account == event.target.value)] = a;
-    accounts[0] = event.target.value;
-    multiChainAccounts[parseInt(ether3um.chainId, 16)] = accounts;
-    handleNewAccountsMultiChain(multiChainAccounts, Object.keys(multiChainAccounts).findIndex((chainId) => '0x' + parseInt(chainId).toString(16) == ether3um.chainId));
-  }))
-
-  requestAccountsMultiChainButton.onclick = () => onClickConnectMultiChain();
-
   const accountButtons = [
     deployButton,
     depositButton,
@@ -363,56 +332,6 @@ const initialize = async () => {
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
 
-  const onClickConnectMultiChain = async () => {
-    try {
-      const newAccounts = await window.ethereum.request({
-        method: 'eth_requestAccountsMultiChain',
-      });
-      ether3um = window.ethereum;
-      initEthers()
-      // const newAccounts = {
-      //   1: ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000001'],
-      //   42: ['0x0000000000000000000000000000000000000002', '0x0000000000000000000000000000000000000003'],
-      //   128: ['0x0000000000000000000000000000000000000004', '0x0000000000000000000000000000000000000005'],
-      // }
-      handleNewAccountsMultiChain(newAccounts);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const onClickWCV1Connect = async () => {
-    try {
-      walletConnectV1Provider = new WalletConnectProvider({
-        rpc: { 1: 'https://cloudflare-eth.com/' },
-      });
-      const newAccounts = await walletConnectV1Provider.enable()
-      console.log('onClickWCV1Connect', newAccounts);
-      ether3um = walletConnectV1Provider
-      initEthers()
-      handleNewAccounts(newAccounts)
-      getNetworkAndChainId()
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const onClickBZCV1Connect = async () => {
-    try {
-      bitizenConnectV1Provider = new BitizenConnectProvider({
-        rpc: { 1: 'https://cloudflare-eth.com/' }
-      });
-      const newAccounts = await bitizenConnectV1Provider.enable()
-      console.log('onClickBZCV1Connect', newAccounts);
-      ether3um = bitizenConnectV1Provider
-      initEthers()
-      handleNewAccounts(newAccounts)
-      getNetworkAndChainId()
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   const onClickConnect = async () => {
     try {
       const newAccounts = await window.ethereum.request({
@@ -422,6 +341,44 @@ const initialize = async () => {
       initEthers()
       handleNewAccounts(newAccounts)
       getNetworkAndChainId()
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const onClickWCV2Connect = async () => {
+    try {
+      const session = await wcV2Modal.connect({
+        requiredNamespaces: {
+          eip155: {
+            methods: ['eth_sign', 'eth_requestAccounts', 'eth_getBalance', 'net_version', 'eth_accounts', 'eth_chainId', 'eth_getBlockByNumber', 'eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4'],
+            chains: ['eip155:1'],
+            events: ['chainChanged', 'accountsChanged']
+          }
+        }
+      })
+      let [protocol, chainId, newAccounts] = session.namespaces.eip155.accounts[0].split(':')
+      ether3um = {
+        isWc: true,
+        async request(req) {
+          if (!req.id) {
+            req.id = new Date().getTime()
+          }
+          if (!req.jsonrpc) {
+            req.jsonrpc = '2.0'
+          }
+          const wcReq = {
+            topic: session.topic,
+            chainId: `${protocol}:${chainId}`,
+            request: req
+          };
+          return wcV2Modal.request(wcReq)
+        },
+      };
+      initEthers()
+      handleNewAccounts([newAccounts])
+      handleNewChain('0x' + parseInt(chainId).toString(16))
+      onNetworkChanged(chainId)
     } catch (error) {
       console.error(error);
     }
@@ -463,55 +420,11 @@ const initialize = async () => {
     switchEthereumChain.disabled = false;
     watchTBT.disabled = false;
 
-    if (walletConnectV1Provider.connected) {
-      walletConnectV1DisconnectButton.style.display = 'block';
-      walletConnectV1DisconnectButton.onclick = async () => {
-        console.log("walletConnectV1DisconnectButton.onclick");
-        await walletConnectV1Provider.disconnect()
-        window.location.reload()
-      };
-      walletConnectV1ConnectButton.style.display = 'none';
-      return;
-    } else {
-      walletConnectV1DisconnectButton.style.display = 'none';
-      walletConnectV1ConnectButton.innerText = 'Connect (WalletConnectV1)';
-      walletConnectV1ConnectButton.disabled = false;
-      walletConnectV1ConnectButton.onclick = onClickWCV1Connect;
-    }
 
-    if (bitizenConnectV1Provider.connected) {
-      bitizenConnectV1DisconnectButton.style.display = 'block';
-      bitizenConnectV1DisconnectButton.onclick = async () => {
-        console.log("bitizenConnectV1DisconnectButton.onclick");
-        await bitizenConnectV1Provider.disconnect()
-        window.location.reload()
-      };
-      bitizenConnectV1ConnectButton.style.display = 'none';
-      return;
-    } else {
-      bitizenConnectV1DisconnectButton.style.display = 'none';
-      bitizenConnectV1ConnectButton.innerText = 'Connect (Bitzen)';
-      bitizenConnectV1ConnectButton.disabled = false;
-      bitizenConnectV1ConnectButton.onclick = onClickBZCV1Connect;
-    }
+    onboardButton.innerText = 'Connect (injectWeb3)';
+    onboardButton.onclick = onClickConnect;
 
-    if (isMetaMaskConnected()) {
-      onboardButton.innerText = 'Connected (injectWeb3)';
-      onboardButton.disabled = true;
-      if (ether3um && ether3um.isBitizen) {
-        onboardButtonMultiChain.innerText = 'Connected';
-        onboardButtonMultiChain.disabled = true;
-      }
-    } else {
-      onboardButton.innerText = 'Connect (injectWeb3)';
-      onboardButton.onclick = onClickConnect;
-      onboardButton.disabled = false;
-      if (ether3um && ether3um.isBitizen) {
-        onboardButtonMultiChain.innerText = 'Connect';
-        onboardButtonMultiChain.onclick = onClickConnectMultiChain;
-        onboardButtonMultiChain.disabled = false;
-      }
-    }
+    wcV2Button.onclick = onClickWCV2Connect;
   };
 
   addEthereumChain.onclick = async () => {
@@ -1583,65 +1496,6 @@ const initialize = async () => {
       initializeAccountButtons();
     }
     updateButtons();
-    handleAccountsChanged();
-  }
-
-  async function updateMultiChainAccountBalances() {
-    let innerHTML = '';
-    const chainIds = Object.keys(multiChainAccounts);
-    for (let i = 0; i < chainIds.length; i++) {
-      const chainId = chainIds[i];
-      const chainName = chainInfos[chainId];
-      innerHTML += '<p class="info-text alert alert-secondary">' + chainName + ':<br>';
-      for (let j = 0; j < multiChainAccounts[chainId].length; j++) {
-        const account = multiChainAccounts[chainId][j];
-        try {
-          const resp = await ether3um.request({ 'method': 'eth_getBalance', 'chainId': '0x' + parseInt(chainId).toString(16), 'params': [account, 'latest'] });
-          innerHTML += account + ': ' + (parseInt(resp, 16) / 1e18) + '<br>'
-        } catch (error) {
-          innerHTML += account + ': failed ' + JSON.stringify(error) + '<br>'
-        }
-      }
-      innerHTML += '</p>';
-    }
-    balancesMultiChainDiv.innerHTML = innerHTML;
-  }
-
-  function handleNewAccountsMultiChain(newAccounts, newChainIndex = 0) {
-    multiChainAccounts = newAccounts;
-    updateMultiChainAccountBalances();
-
-    ether3um.chainId = '0x' + parseInt(Object.keys(newAccounts)[newChainIndex]).toString(16);
-    handleNewChain(ether3um.chainId)
-    onNetworkChanged(Object.keys(newAccounts)[newChainIndex])
-    accounts = newAccounts[Object.keys(newAccounts)[newChainIndex]];
-    accountsDiv.innerHTML = accounts[0] || '';
-    fromDiv.value = accounts[0] || '';
-    ether3um.request({ 'method': 'eth_getBalance', 'params': [accounts[0], 'latest'] }).then(resp => currentBalanceDiv.innerHTML = parseInt(resp, 16) / 1e18);
-    gasPriceDiv.style.display = 'block';
-    maxFeeDiv.style.display = 'none';
-    maxPriorityDiv.style.display = 'none';
-
-    let selectChainsOptionsInnerHtml = '';
-    Object.keys(newAccounts).forEach(chainId => {
-      selectChainsOptionsInnerHtml += `<option value="0x${parseInt(chainId).toString(16)}" ` + (ether3um.chainId == '0x' + parseInt(chainId).toString(16) ? 'selected' : '') + `>${chainInfos[chainId]}(${chainId})</option>`;
-    })
-    selectChainsOptions.innerHTML = selectChainsOptionsInnerHtml;
-
-    handleAccountsChanged()
-    if (isMetaMaskConnected()) {
-      initializeAccountButtons();
-    }
-    updateButtons();
-  }
-
-  function handleAccountsChanged() {
-    let selectAccountsOptionsInnerHtml = '';
-    for (let i = 0; i < accounts.length; i++) {
-      const a = accounts[i];
-      selectAccountsOptionsInnerHtml += `<option value="` + a + `" ` + (i == 0 ? 'selected' : '') + `>${a}</option>`
-    }
-    selectAccountsOptions.forEach(sel => sel.innerHTML = selectAccountsOptionsInnerHtml);
   }
 
   function handleNewChain(chainId) {
@@ -1697,27 +1551,6 @@ const initialize = async () => {
     handleNewAccounts(newAccounts);
   }
 
-  const initWcV1Provider = () => {
-    walletConnectV1Provider.on('disconnect', () => {
-      console.log('wcv1 disconnect');
-      onAccountChanged([])
-      onChainChanged('')
-      onNetworkChanged('')
-      updateButtons()
-    });
-    return;
-  }
-
-  const initBzcV1Provider = () => {
-    bitizenConnectV1Provider.on('disconnect', () => {
-      console.log('bitizenConnectV1Provider disconnect');
-      onAccountChanged([])
-      onChainChanged('')
-      onNetworkChanged('')
-      updateButtons()
-    });
-    return;
-  }
 
   async function getNetworkAndChainId() {
     try {
@@ -1754,9 +1587,6 @@ const initialize = async () => {
     ether3um.on('chainChanged', onChainChanged);
     ether3um.on('networkChanged', onNetworkChanged);
     ether3um.on('accountsChanged', onAccountChanged);
-
-    initWcV1Provider()
-    initBzcV1Provider()
 
     try {
       const newAccounts = await ether3um.request({
