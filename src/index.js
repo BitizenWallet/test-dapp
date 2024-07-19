@@ -360,7 +360,7 @@ const initialize = async () => {
         requiredNamespaces: {
           eip155: {
             methods: ['eth_sign', 'eth_requestAccounts', 'eth_getBalance', 'net_version', 'eth_accounts', 'eth_chainId', 'eth_getBlockByNumber', 'eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4'],
-            chains: ['eip155:1'],
+            chains: ['eip155:100'],
             events: ['chainChanged', 'accountsChanged']
           }
         }
