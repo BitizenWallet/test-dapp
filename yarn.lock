@@ -1202,7 +1202,7 @@
     "@web3modal/wallet" "5.0.8"
     valtio "1.11.2"
 
-"@web3modal/ethers5@workspace:*":
+"@web3modal/ethers5@5.0.8":
   version "5.0.8"
   resolved "https://registry.yarnpkg.com/@web3modal/ethers5/-/ethers5-5.0.8.tgz#491bfa417de25cb6f87bf51f91005b60b4489a06"
   integrity sha512-dIPIflS8sjXmXJG9iLp7OmhAnpuyDdrEvaKJ/Duv5DvLOljFlPmdo6Yoxw8LboDPr2TN/ODZlrFZ35hVdXPLOA==
