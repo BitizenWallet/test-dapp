@@ -17,7 +17,7 @@ const modal = createWeb3Modal({
 })
 
 // 4. Trigger modal programaticaly
-const openConnectModalBtn = document.getElementById('')
+const openConnectModalBtn = document.getElementById('open-connect-modal')
 const openNetworkModalBtn = document.getElementById('open-network-modal')
 
 openConnectModalBtn.addEventListener('click', () => modal.open())
