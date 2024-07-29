@@ -16,7 +16,7 @@ jobs:
       - name: Build
         run: |
           yarn
-          yarn build-only
+          yarn build-only --base=/test-dapp
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
