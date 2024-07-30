@@ -49,7 +49,8 @@ const tx = ref({
   to: '',
   value: '',
   data: '0x',
-  gasPrice: ''
+  gasPrice: '',
+  gas: '',
 })
 
 const getSigner = async () => {
@@ -67,10 +68,14 @@ const sendTransaction = async () => {
       "to": tx.value.to,
       "value": tx.value.value,
       "data": tx.value.data,
-      "gasPrice": tx.value.gasPrice
+      "gasPrice": tx.value.gasPrice,
+      "gas": tx.value.gas,
     } as any
     if (!txSend["gasPrice"]) {
       delete txSend["gasPrice"]
+    }
+    if (!txSend["gas"]) {
+      delete txSend["gas"]
     }
     console.log('sendTransaction', txSend);
     const signer = await ethersProvider.getSigner()
@@ -94,6 +99,7 @@ const sendTransaction = async () => {
       Value: <input type="text" v-model="tx.value"> <br>
       Data: <input type="text" v-model="tx.data"> <br>
       GasPrice: <input type="text" v-model="tx.gasPrice"> <br>
+      Gas: <input type="text" v-model="tx.gas"> <br>
       <button @click="sendTransaction()">Send Transaction</button>
     </p>
   </main>
