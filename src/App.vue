@@ -30,21 +30,30 @@ const toWCChainInfo = (chain: any) => {
   }
 }
 
-const chains = [toWCChainInfo(mainnet), toWCChainInfo(bsc), toWCChainInfo(avalanche),
-toWCChainInfo(base), toWCChainInfo(polygon), toWCChainInfo(optimism), toWCChainInfo(arbitrum),
-toWCChainInfo(zkSync), toWCChainInfo(mantle), toWCChainInfo(metis)] as any
+const chainsOld = [mainnet, bsc, avalanche,
+  base, polygon, optimism, arbitrum,
+  zkSync, mantle, metis] as any
 
-console.log(chains);
+const getChains = () => {
+  const chains = chainsOld.map((chain: any) => toWCChainInfo(chain))
+  return chains
+}
 
-const modal = createWeb3Modal({
-  ethersConfig,
-  projectId,
-  chains,
-  enableAnalytics: false, // Optional - defaults to your Cloud configuration  
-})
+let modal: any;
 
 let ethersProvider: any
 let chainId = ref('--')
+
+const initModal = () => {
+  const chains = getChains()
+  console.log(chains);
+  modal = createWeb3Modal({
+    ethersConfig,
+    projectId,
+    chains,
+    enableAnalytics: false, // Optional - defaults to your Cloud configuration  
+  })
+}
 
 const tx = ref({
   to: '',
@@ -91,7 +100,7 @@ const sendTransaction = async () => {
 
 <template>
   <main>
-    <button @click="modal.open()">Open Modal</button>&nbsp;
+    <button @click="initModal">Open Modal</button>&nbsp;
     <button @click="modal.open({ view: 'Networks' })">Open Networks</button>&nbsp;
     <button @click="getSigner()">Open Wallets</button>&nbsp;
     <p>
