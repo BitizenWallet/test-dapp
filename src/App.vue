@@ -23,7 +23,7 @@ const ethersConfig = defaultConfig({
 
 
 const toWCChainInfo = (chain: any) => {
-  if (chain.id.toString() == '1' && chain.rpcUrls.default.http.length < 1) {
+  if (chain.id.toString() == '1' && chain.rpcUrls.default.http.length < 2) {
     chain.rpcUrls.default.http.push('https://eth.llamarpc.com')
     chain.rpcUrls.default.http.push('https://eth.api.onfinality.io/public')
   }
