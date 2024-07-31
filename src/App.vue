@@ -23,7 +23,7 @@ const ethersConfig = defaultConfig({
 
 
 const toWCChainInfo = (chain: any) => {
-  if (chain.id.toString() == '1') {
+  if (chain.id.toString() == '1' && chain.rpcUrls.default.http.length < 1) {
     chain.rpcUrls.default.http.push('https://eth.llamarpc.com')
     chain.rpcUrls.default.http.push('https://eth.api.onfinality.io/public')
   }
@@ -40,7 +40,6 @@ const chainsOld = [mainnet, bsc, avalanche,
   base, polygon, optimism, arbitrum,
   zkSync, mantle, metis] as any
 
-console.log('chainsOld', chainsOld);
 
 const getChains = () => {
   const chains = chainsOld.map((chain: any) => toWCChainInfo(chain))
@@ -61,6 +60,7 @@ const initModal = () => {
     chains,
     enableAnalytics: false, // Optional - defaults to your Cloud configuration  
   })
+  modal.open()
 }
 
 const tx = ref({
