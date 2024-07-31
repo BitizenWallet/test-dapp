@@ -20,7 +20,13 @@ const ethersConfig = defaultConfig({
   }
 })
 
+
+
 const toWCChainInfo = (chain: any) => {
+  if (chain.id.toString() == '1') {
+    chain.rpcUrls.default.http.push('https://eth.llamarpc.com')
+    chain.rpcUrls.default.http.push('https://eth.api.onfinality.io/public')
+  }
   return {
     chainId: chain.id,
     name: chain.name,
@@ -33,6 +39,8 @@ const toWCChainInfo = (chain: any) => {
 const chainsOld = [mainnet, bsc, avalanche,
   base, polygon, optimism, arbitrum,
   zkSync, mantle, metis] as any
+
+console.log('chainsOld', chainsOld);
 
 const getChains = () => {
   const chains = chainsOld.map((chain: any) => toWCChainInfo(chain))
@@ -100,7 +108,7 @@ const sendTransaction = async () => {
 
 <template>
   <main>
-    <button @click="initModal">Open Modal</button>&nbsp;
+    <button @click="initModal()">Open Modal</button>&nbsp;
     <button @click="modal.open({ view: 'Networks' })">Open Networks</button>&nbsp;
     <button @click="getSigner()">Open Wallets</button>&nbsp;
     <p>
