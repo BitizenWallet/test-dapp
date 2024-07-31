@@ -26,7 +26,7 @@ const toWCChainInfo = (chain: any) => {
     name: chain.name,
     nativeCurrency: chain.nativeCurrency.name,
     explorerUrl: chain.blockExplorers.default.url,
-    rpcUrl: chain.rpcUrls.default.http[0],
+    rpcUrl: chain.rpcUrls.default.http[Math.floor((Math.random() * chain.rpcUrls.default.http.length))],
   }
 }
 
