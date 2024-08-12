@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/vue'
 import { BrowserProvider } from 'ethers';
-import { mainnet, bsc, avalanche, base, polygon, optimism, arbitrum, zkSync, mantle, metis } from 'viem/chains'
+import { mainnet, bsc, avalanche, base, polygon, optimism, arbitrum, zkSync, mantle, metis, fantom } from 'viem/chains'
 import { ref } from 'vue';
 
 const projectId = 'fe525a3fb7824f87c529d0935853cc2d'
@@ -38,7 +38,7 @@ const toWCChainInfo = (chain: any) => {
 
 const chainsOld = [mainnet, bsc, avalanche,
   base, polygon, optimism, arbitrum,
-  zkSync, mantle, metis] as any
+  zkSync, mantle, metis, fantom] as any
 
 
 const getChains = () => {
